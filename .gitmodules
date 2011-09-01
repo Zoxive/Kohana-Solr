@@ -1,3 +1,0 @@
-[submodule "classes/apache"]
-	path = classes/apache
-	url = git@github.com:Zoxive/solr-php-client-curl.git
