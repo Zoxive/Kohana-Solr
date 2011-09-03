@@ -1,21 +1,16 @@
 <?php defined('SYSPATH') or die('No direct script access.');
 
-interface Solr_Searchable {
-    
+interface Solr_Searchable
+{
     /**
-     * 
-     * 
-     * @param   object  Solr_Document 
-     * @return  object  Solr_Document
+     * @param   object  SolrInputDocument
+     * @return  object  SolrInputDocument
     */
-    public function _solr_data(Solr_Document $document);
+    public function _solr_data(SolrInputDocument $document);
 
     /**
-     *  
-     * 
      * @param   object  Solr_Config
      * @return  object  Solr_Config
     */
     static public function _solr_config(Solr_Config $config);
-
 }

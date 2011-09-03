@@ -1,7 +1,7 @@
 <?php defined('SYSPATH') or die('No direct script access.');
 
-class Solr_Field_Core {
-
+class Solr_Field_Core
+{
     protected $_attributes = array
     (
         /**
@@ -51,13 +51,13 @@ class Solr_Field_Core {
          * Store position information with the term vector.
 		 * This will increase storage costs.
          */
-        'termPositions'	=>	null,
+        'termPositions'	=>	NULL,
 	
 		/**
          * Store offset information with the term vector.
 		 * This will increase storage costs.
          */
-		'termOffsets'	=>	null,
+		'termOffsets'	=>	NULL,
     );
 
     /**
@@ -69,7 +69,7 @@ class Solr_Field_Core {
     {
         $this->_attributes['name'] = $name;
 
-        if ( $type !== NULL )
+        if ($type !== NULL)
         {
             $this->type($type);
         }

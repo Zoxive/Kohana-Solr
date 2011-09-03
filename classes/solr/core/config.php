@@ -1,7 +1,7 @@
 <?php defined('SYSPATH') or die('No direct script access.');
 
-class Solr_Core_Config {
-
+class Solr_Core_Config
+{
     /**
      * @var     string  index name
      */

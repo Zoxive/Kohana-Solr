@@ -1,6 +1,7 @@
 <?php defined('SYSPATH') or die('No direct script access.');
 
-class Solr_Core {
+class Solr_Core
+{
 
     static public function factory()
     {
