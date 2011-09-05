@@ -25,6 +25,11 @@ class Solr_Field_Core
         'default'       =>  NULL,
 
         /**
+         * Makes this field required. Used for Primary Keys
+         */
+        'required'      =>  NULL,
+
+        /**
          * If this field can contain multiple values per document (ie: category hiearchy, tags)
          */
         'multiValued'   =>  FALSE,
@@ -61,6 +66,19 @@ class Solr_Field_Core
     );
 
     /**
+     * XML Element Name
+     *
+     * Changable for dynamicField
+     */
+    protected $tag_name = 'field';
+
+    static public function factory($name, $type)
+    {
+        $model = 'Solr_Field_'.$type;
+        return new $model($name);
+    }
+
+    /**
      * Initalize the Solr_Field
      *
      * @return void
@@ -73,6 +91,11 @@ class Solr_Field_Core
         {
             $this->type($type);
         }
+    }
+
+    public function tag_name()
+    {
+        return $this->tag_name;
     }
 
     public function as_array()
@@ -102,9 +125,9 @@ class Solr_Field_Core
         return $this;
     }
 
-    public function store($store = TRUE)
+    public function stored($stored = TRUE)
     {
-        $this->_attributes['store'] = (bool)$store;
+        $this->_attributes['stored'] = (bool)$stored;
         return $this;
     }
 
@@ -120,9 +143,15 @@ class Solr_Field_Core
         return $this;
     }
 
-    public function default($default = NULL)
+    public function required($required = TRUE)
     {
-        $this->_attributes['default'] = $default;
+        $this->_attributes['required'] = (bool)$required;
+        return $this;
+    }
+
+    public function set_default($def = NULL)
+    {
+        $this->_attributes['default'] = $def;
         return $this;
     }
 
@@ -159,5 +188,36 @@ class Solr_Field_Core
     protected function type($type)
     {
         return $this->_attributes['type'] = $type;
+    }
+
+    public function generateFieldXML(DOMElement $ele)
+    {
+        foreach ($this->_attributes as $name => $value)
+        {
+            if (!is_null($value))
+            {
+                if (is_bool($value))
+                {
+                    $ele->setAttribute($name, $value? 'TRUE' : 'FALSE');
+                }
+                else
+                {
+                    $ele->setAttribute($name, $value);
+                }
+            }
+        }
+
+        return $ele;
+    }
+
+    /**
+     * Generates the XML for the field to be added to ehe schema.xml
+     *
+     * @param DOMElement @fieldtype     A blank DOMElement object
+     * @return DOMElement
+     */
+    static public function generateXML(DOMElement $ele)
+    {
+        throw new Solr_Exception('generateXML must be implemented for field classes');
     }
 }

@@ -52,9 +52,14 @@ class Solr_Core_Config
     /**
      * @return  array   name => object
     */
-    public function fields()
+    public function get_fields($all = TRUE)
     {
-        return $this->_fields;
+        return array_merge(array($this->_primary_field), $this->_fields);
+    }
+
+    public function get_copy_fields()
+    {
+        return $this->_copy_fields;
     }
 
     public function qp($query_parser = NULL)
@@ -77,6 +82,10 @@ class Solr_Core_Config
     {
         if ($pf)
         {
+            // make field required
+            $pf->required();
+            $pf->stored();
+
             $this->_primary_field = $pf;
         }
 
@@ -101,6 +110,7 @@ class Solr_Core_Config
     public function add_field(Solr_Field $field)
     {
         $this->_fields[] = $field;
+        return $this;
     }
 
     public function add_fields(array $fields)
@@ -113,11 +123,11 @@ class Solr_Core_Config
     {
         if (isset($this->_copy_fields[$destination]))
         {
-            $this->_copy_fields = array_merge((array)$this->_copy_fields[$dest], $fields);
+            $this->_copy_fields[$destination] = array_merge((array)$this->_copy_fields[$dest], $fields);
         }
         else
         {
-            $this->_copy_fields = $fields;
+            $this->_copy_fields[$destination] = $fields;
         }
 
         return $this;
