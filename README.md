@@ -8,5 +8,5 @@ Currently a WIP
 
 ##Core Creation##
 * php index.php --uri=solrcli/{modelname}/{method}
-** {modelname} is the name of the Solr_Search interface implemented model.
-** {method} is the function you want to execute on this model. Current - help/start/stop/rebuild/index/removeall/status
+* {modelname} is the name of the Solr_Search interface implemented model.
+* {method} is the function you want to execute on this model. Current - help/start/stop/rebuild/index/removeall/status
