@@ -11,6 +11,12 @@ return array
      */
     'solr_home' => '/usr/share/solr/',
 
+    /*
+     * Need to make sure folders we create are writable by what program controls the data files.
+     * In my case its jetty.
+     */
+    'solr_user' => 'jetty',
+
     'client_options' => array
     (
         'hostname'  => 'localhost',

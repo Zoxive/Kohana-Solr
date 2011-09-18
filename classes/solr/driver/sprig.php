@@ -9,4 +9,9 @@ class Solr_Driver_Sprig extends Solr_Driver
             ->order_by(DB::expr('FIELD(`'.$this->model->pk().'`, '.implode(',', $docids).')'));
         return $this->model->load($query, NULL);
     }
+
+    public function get_all()
+    {
+        return $this->model->load(NULL, NULL);
+    }
 }

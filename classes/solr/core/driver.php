@@ -20,12 +20,7 @@ abstract Class Solr_Core_Driver
         }
 
         throw new Solr_Exception(':name does not have an attribute :attribute',
-            array
-            (
-                ':name' => get_class($this),
-                ':attribute' => $var
-            )
-        );
+            array(':name' => get_class($this), ':attribute' => $var));
     }
 
     /**
@@ -39,4 +34,11 @@ abstract Class Solr_Core_Driver
      * @return  mixed
      */
     abstract public function in(array $docids);
+
+    /**
+     * Returns Array object form of all rows of this model
+     *
+     * @return array
+     */
+    abstract public function get_all();
 }

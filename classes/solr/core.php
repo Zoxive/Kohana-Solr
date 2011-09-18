@@ -58,7 +58,7 @@ class Solr_Core
      * @param  string
      * @param  array
      */
-    static public function curlRequest($url, array $params = null)
+    static public function curl_request($url, array $params = null)
     {
         $cl = curl_init();
         curl_setopt($cl, CURLOPT_URL, $url);
@@ -72,13 +72,23 @@ class Solr_Core
             }
         }
 
-        return curl_exec($cl);
+        $response = curl_exec($cl);
+        $http_code = curl_getinfo($cl, CURLINFO_HTTP_CODE);
+        curl_close($cl);
+
+        if ($http_code != 200)
+        {
+            throw new Solr_Exception('Invalid Curl Response. HTTP CODE :code',
+                array(':code' => $http_code));
+        }
+
+        return $response;
     }
 
     static public function base()
     {
         Solr::getConfig();
-        return 'http://'.Solr::$_config->client_options['hostname'].':'.Solr::$_config->client_options['port'].'/';
+        return 'http://'.Solr::$_config->client_options['hostname'].':'.Solr::$_config->client_options['port'].'/'.trim(Solr::$_config->client_options['path'], '/');
     }
 
     static public function getConfig()
@@ -92,9 +102,24 @@ class Solr_Core
     public function __construct(Solr_Searchable $model)
     {
         $driver = Solr::$_config->driver;
+        $this->model = $model;
         $this->driver = new $driver($model);
         $this->model_class = get_class($model);
         $this->config = call_user_func($this->model_class.'::_solr_config', new Solr_Config);
+    }
+
+    public function __get($var)
+    {
+        switch($var)
+        {
+            case 'config':
+            case 'driver':
+                return $this->$var;
+            break;
+        }
+
+        throw new Solr_Exception(':name does not have an attribute :attribute',
+            array(':name' => get_class($this), ':attribute' => $var));
     }
 
     public function ping()
@@ -111,6 +136,27 @@ class Solr_Core
         return $ping->success();
     }
 
+    public function delete()
+    {
+        if (!$this->ping())
+        {
+            throw new Solr_Exception('Core ":core" does not exist.',
+                array(':core' => $this->config->index_name()));
+        }
+
+        $url = Solr::base().'/admin/cores';
+        $params = array
+        (
+            'action'    =>  'UNLOAD',
+            'core'      =>  $this->config->index_name(),
+        );
+
+        $resp = Solr::curl_request($url.'?'.http_build_query($params));
+        $xml = new DOMDocument;
+        $xml->formatOutput = true;
+        $xml->loadXML($resp);
+    }
+
     public function create()
     {
         if ($this->ping())
@@ -124,7 +170,7 @@ class Solr_Core
         $this->make();
 
         $url = Solr::base();
-        $path = trim(Solr::$_config->client_options['path'], '/').'/admin/cores';
+        $path = '/admin/cores';
         $params = array
         (
             'action'        => 'CREATE',
@@ -133,8 +179,65 @@ class Solr_Core
             'dataDir'       => './data',
         );
 
-        $resp = Solr::curlRequest($url.$path.'?'.http_build_query($params));
-        var_dump($resp);
+        $resp = Solr::curl_request($url.$path.'?'.http_build_query($params));
+
+        $doc = new DOMDocument('1.0');
+        $doc->formatOutput = TRUE;
+        $doc->loadXML($resp);
+
+        $response = $doc->getElementsByTagName('response') && $doc->getElementsByTagName('response')->item(0)? $doc->getElementsByTagName('response')->item(0) : false;
+        if (!$response)
+        {
+            //throw new Solr_Exception('Invalid Response occured');
+            return false;
+        }
+
+        $status = $response->getElementsByTagName('int')->item(0);
+        $qtime = $response->getElementsByTagName('int')->item(1);
+        $core = $response->getElementsByTagName('str')->item(0);
+
+        $obj = new stdClass;
+        $obj->status = $status->nodeValue;
+        $obj->time = $qtime->nodeValue;
+        $obj->core = $core->nodeValue;
+
+        return $obj->status == 0 && $obj->core == $this->config->index_name()? $obj : false;
+    }
+
+    /**
+     * @throws SolrClientException
+     */
+    public function remove_all($optimize = true)
+    {
+        $client = Solr::getClient(null, $this->config->index_name());
+        $client->ping();
+
+        $resp = $client->deleteByQuery('*:*'); 
+        $client->commit();
+        if ($optimize)
+        {
+            $client->optimize();
+        }
+    }
+
+    public function create_model_document(Solr_Searchable $model)
+    {
+        if ( !($model instanceof $this->model))
+        {
+            throw new Solr_Exception('Model was not an instance of the loaded Config');
+        }
+        $doc = new SolrInputDocument;
+        $doc = $model->_solr_data($doc);
+
+        // fix primary field
+        $pf = $this->config->pf();
+        // delete if model added the pf
+        $doc->deleteField($pf->name);
+        // primary fields are prefixed with the core name.. this allows us to use shards
+        $value = $this->config->index_name().':'.$model->{$pf->name};
+        $doc->addField($pf->name, $value);
+
+        return $doc;
     }
 
     protected function make()
@@ -171,6 +274,7 @@ class Solr_Core
             try
             {
                 mkdir($dir.$folder, 0775);
+                chown($dir.$folder, Solr::$_config->solr_user);
             }
             catch (ErrorException $e)
             {
@@ -186,6 +290,7 @@ class Solr_Core
             try
             {
                 mkdir($dir.$folder.'/conf', 0775);
+                chown($dir.$folder.'/conf', Solr::$_config->solr_user);
             }
             catch (ErrorException $e)
             {
@@ -208,7 +313,8 @@ class Solr_Core
         $schema->setAttribute('version', '1.2');
 
         // hi
-        $schema->appendChild(new DOMComment('Created Using https://github.com/Zoxive/Kohana-Solr'));
+        $comment = 'Generated '.date('r').' | Using https://github.com/Zoxive/Kohana-Solr';
+        $schema->appendChild(new DOMComment($comment));
 
         // types
         $types = $xml->createElement('types');

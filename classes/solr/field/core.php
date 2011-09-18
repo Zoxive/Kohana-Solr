@@ -198,7 +198,7 @@ class Solr_Field_Core
             {
                 if (is_bool($value))
                 {
-                    $ele->setAttribute($name, $value? 'TRUE' : 'FALSE');
+                    $ele->setAttribute($name, $value? 'true' : 'false');
                 }
                 else
                 {
